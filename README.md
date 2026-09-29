@@ -85,7 +85,9 @@ flowchart TB
 
 ## 📊 Hardware & Memory Allocation (24GB Host Budget)
 
-QuarkDock is tuned to stay strictly within a **16GB Docker memory cap**, leaving 8GB untouched for macOS and host desktop apps:
+QuarkDock is tuned to stay strictly within a **12GB – 14GB Docker memory cap** on a 24GB host, leaving ample headroom for macOS, browsers, and host desktop apps (like OpenClaw Desktop).
+
+> 📖 **Full Sizing Guide**: See [`docs/hardware-and-resource-sizing.md`](docs/hardware-and-resource-sizing.md) for detailed CPU allocation tiers, Apple Silicon NEON vector throughput notes, and Docker Desktop VM tuning instructions.
 
 | Container Service | Memory Limit | Memory Reservation | Storage Persistence |
 |-------------------|--------------|--------------------|---------------------|
@@ -96,7 +98,12 @@ QuarkDock is tuned to stay strictly within a **16GB Docker memory cap**, leaving
 | `quarkdock-ui` | 256 MB | 64 MB | Ephemeral |
 | `quarkdock-redis` | 256 MB | 64 MB | `redis_data` named volume |
 | `quarkdock-otel` | 128 MB | 64 MB | Ephemeral |
-| **Total Ecosystem** | **~8.6 GB Max** | **~5.0 GB Steady** | **Headroom: ~7.4 GB in Docker** |
+| **Total Ecosystem** | **~8.6 GB Max** | **~5.0 GB Steady** | **Headroom: ~3.5 – 5.0 GB in Docker** |
+
+### Docker Desktop Sizing Requirements
+- **Minimum for testing**: 10.0 GB RAM, 8 CPUs (suitable for `qwen2.5:3b` or `gemma3:4b`)
+- **Recommended for production**: 12.0 – 14.0 GB RAM, 10–14 CPUs (optimal for `qwen2.5:7b-instruct-q4`)
+- **Disk**: 64 GB+ (Apple Virtualization framework + VirtioFS enabled)
 
 ---
 

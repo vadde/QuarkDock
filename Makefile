@@ -96,6 +96,11 @@ doctor: ## Audit host port availability, Docker status, and system memory
 	@echo -n "Checking Docker daemon... "
 	@if docker info > /dev/null 2>&1; then \
 		echo -e "$(GREEN)OK$(RESET)"; \
+		MEM_BYTES=$$(docker info --format '{{.MemTotal}}' 2>/dev/null || echo 0); \
+		CPUS=$$(docker info --format '{{.NCPU}}' 2>/dev/null || echo 0); \
+		python3 -c "m = $$MEM_BYTES / (1024**3); c = $$CPUS; \
+print(f'  • Docker VM Allocated RAM: {m:.1f} GB ' + ('\033[32m[OPTIMAL]\033[0m' if m >= 12 else ('\033[33m[ACCEPTABLE - Recommend 12GB+]\033[0m' if m >= 10 else '\033[31m[CRITICAL - Low memory for 7B LLM]\033[0m'))); \
+print(f'  • Docker VM Allocated CPUs: {c} cores ' + ('\033[32m[OPTIMAL]\033[0m' if c >= 10 else ('\033[33m[ACCEPTABLE]\033[0m' if c >= 8 else '\033[31m[LOW - May cause slow inference]\033[0m')))"; \
 	else \
 		echo -e "$(RED)FAIL (Docker daemon not running)$(RESET)"; \
 	fi
