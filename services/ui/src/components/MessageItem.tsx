@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { ThumbsUp, ThumbsDown, Copy, Check, ExternalLink, Bot, User } from 'lucide-react';
 import { Message } from '../types/chat';
 
@@ -8,6 +10,39 @@ interface MessageItemProps {
   message: Message;
   onFeedback: (traceId: string, value: number) => void;
 }
+
+/**
+ * Normalizes mathematical and logical notation emitted by LLMs:
+ * - Preserves code blocks (``` and `) from alteration.
+ * - Converts \[ ... \] to display math $$ ... $$.
+ * - Converts \( ... \) to inline math $ ... $.
+ * - Converts parenthetical logic/math expressions containing LaTeX macros
+ *   (e.g., (A \lor \neg B = \text{true})) into KaTeX inline math $(A \lor \neg B = \text{true})$.
+ */
+const normalizeMath = (text: string): string => {
+  if (!text) return '';
+
+  // Preserve code blocks and inline code
+  const codeBlocks: string[] = [];
+  let processed = text.replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
+    codeBlocks.push(match);
+    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+  });
+
+  // 1. Convert \[ ... \] to $$ ... $$ (display math)
+  processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `$$${math}$$`);
+
+  // 2. Convert \( ... \) to $ ... $ (inline math)
+  processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math}$`);
+
+  // 3. Detect parenthetical expressions with LaTeX math keywords: e.g. (A \lor \neg B = \text{true})
+  const mathCommands = "(?:lor|land|neg|text|rightarrow|leftarrow|implies|iff|forall|exists|in|notin|subset|subseteq|cap|cup|times|div|pm|leq|geq|neq|approx|equiv|sum|prod|int|frac|sqrt|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|phi|omega|infty|vee|wedge|top|bot)";
+  const parenMathRegex = new RegExp(`\\(([^()\\n]*\\\\${mathCommands}[^()\\n]*)\\)`, "g");
+  processed = processed.replace(parenMathRegex, (_, inner) => `$(${inner})$`);
+
+  // Restore code blocks
+  return processed.replace(/__CODE_BLOCK_(\d+)__/g, (_, idx) => codeBlocks[Number(idx)]);
+};
 
 export const MessageItem: React.FC<MessageItemProps> = ({ message, onFeedback }) => {
   const isUser = message.role === 'user';
@@ -29,7 +64,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onFeedback })
       <div className={`glass-panel ${isUser ? 'bubble-user' : `bubble-assistant ${message.isStreaming ? 'streaming' : ''}`}`}>
         <div className="markdown-body">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
             components={{
               pre({ children }) {
                 // Return Fragment to avoid nested pre tags when code block renders
@@ -76,7 +112,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onFeedback })
               },
             }}
           >
-            {message.content}
+            {normalizeMath(message.content)}
           </ReactMarkdown>
         </div>
         {message.isStreaming && <span className="streaming-cursor" />}
