@@ -7,6 +7,7 @@ interface HeaderProps {
   currentModel: string;
   onSelectModel: (model: string) => void;
   onToggleDrawer: () => void;
+  onOpenModelModal: () => void;
   isDrawerOpen: boolean;
   isStreaming: boolean;
 }
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentModel,
   onSelectModel,
   onToggleDrawer,
+  onOpenModelModal,
   isDrawerOpen,
   isStreaming,
 }) => {
@@ -35,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {/* Model Selector */}
+        {/* Model Selector & Management */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Cpu size={16} color="var(--text-tertiary)" />
           <select
@@ -64,6 +66,26 @@ export const Header: React.FC<HeaderProps> = ({
               </option>
             )}
           </select>
+
+          <button
+            onClick={onOpenModelModal}
+            title="Manage & Pull Models"
+            style={{
+              background: 'rgba(139, 92, 246, 0.15)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: '8px',
+              padding: '6px 10px',
+              color: '#c4b5fd',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 150ms ease',
+            }}
+          >
+            <span>Manage</span>
+          </button>
         </div>
 
         {/* Observability Toggle Button */}

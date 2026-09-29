@@ -4,26 +4,66 @@ import { Sidebar } from './components/Sidebar';
 import { MessageItem } from './components/MessageItem';
 import { InputArea } from './components/InputArea';
 import { TraceDrawer } from './components/TraceDrawer';
-import { Message, ModelDetail, TraceMetric } from './types/chat';
+import { ModelModal } from './components/ModelModal';
+import { Message, ModelDetail, Session, TraceMetric } from './types/chat';
 
-export const App: React.FC = () => {
-  const [models, setModels] = useState<ModelDetail[]>([]);
-  const [currentModel, setCurrentModel] = useState<string>('qwen2.5:7b');
-  const [messages, setMessages] = useState<Message[]>([
+const STORAGE_KEY = 'quarkdock_chat_sessions_v2';
+
+const createDefaultSession = (): Session => ({
+  id: `session-${Date.now()}`,
+  title: 'Welcome Session',
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+  messages: [
     {
       id: 'welcome',
       role: 'assistant',
       content:
-        '👋 Welcome to **QuarkDock**.\n\nI am your local **Qwen 2.5 (7B)** model running directly on this machine with full **Langfuse v3** tracing and streaming SSE telemetry.\n\nHow can I help you today?',
+        '👋 Welcome to **QuarkDock**.\n\nI am your local model accelerated directly by your host **Apple Silicon Metal GPU** on port `11434` with real-time **Langfuse** tracing on port `3001`.\n\nHow can I help you today?',
       timestamp: Date.now(),
     },
-  ]);
+  ],
+});
+
+export const App: React.FC = () => {
+  const [models, setModels] = useState<ModelDetail[]>([]);
+  const [currentModel, setCurrentModel] = useState<string>('qwen2.5:7b');
+
+  // Multi-session state with localStorage persistence
+  const [sessions, setSessions] = useState<Session[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to restore chat sessions from localStorage:', e);
+    }
+    return [createDefaultSession()];
+  });
+
+  const [activeSessionId, setActiveSessionId] = useState<string>(() => sessions[0]?.id || 'session-default');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [isModelModalOpen, setIsModelModalOpen] = useState<boolean>(false);
   const [latestMetric, setLatestMetric] = useState<TraceMetric | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Active session and its messages
+  const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
+  const messages = activeSession?.messages || [];
+
+  // Persist sessions to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    } catch (e) {
+      console.warn('Failed to save sessions to localStorage:', e);
+    }
+  }, [sessions]);
 
   // Auto-scroll to bottom of chat
   const scrollToBottom = () => {
@@ -34,21 +74,23 @@ export const App: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Fetch available models from local API on mount
-  useEffect(() => {
+  // Fetch available models from local API
+  const refreshModels = () => {
     fetch('/api/v1/models')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.models && data.models.length > 0) {
           setModels(data.models);
-          setCurrentModel(data.default_model || data.models[0].name);
-        } else {
-          setModels([{ name: 'qwen2.5:7b', size: 4683087332 }]);
+          if (!data.models.some((m: ModelDetail) => m.name === currentModel)) {
+            setCurrentModel(data.default_model || data.models[0].name);
+          }
         }
       })
-      .catch(() => {
-        setModels([{ name: 'qwen2.5:7b', size: 4683087332 }]);
-      });
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshModels();
   }, []);
 
   const handleNewChat = () => {
@@ -56,14 +98,39 @@ export const App: React.FC = () => {
       abortControllerRef.current.abort();
     }
     setIsStreaming(false);
-    setMessages([
-      {
-        id: `msg-${Date.now()}`,
-        role: 'assistant',
-        content: 'New session started. How can I assist you?',
-        timestamp: Date.now(),
-      },
-    ]);
+
+    const newSession: Session = {
+      id: `session-${Date.now()}`,
+      title: 'New Conversation',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [
+        {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: 'New session started. How can I assist you?',
+          timestamp: Date.now(),
+        },
+      ],
+    };
+
+    setSessions((prev) => [newSession, ...prev]);
+    setActiveSessionId(newSession.id);
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    setSessions((prev) => {
+      const filtered = prev.filter((s) => s.id !== sessionId);
+      if (filtered.length === 0) {
+        const fallback = createDefaultSession();
+        setActiveSessionId(fallback.id);
+        return [fallback];
+      }
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(filtered[0].id);
+      }
+      return filtered;
+    });
   };
 
   const handleStopStreaming = () => {
@@ -72,14 +139,29 @@ export const App: React.FC = () => {
       abortControllerRef.current = null;
     }
     setIsStreaming(false);
-    setMessages((prev) =>
+    updateActiveSessionMessages((prev) =>
       prev.map((msg, i) => (i === prev.length - 1 ? { ...msg, isStreaming: false } : msg))
     );
   };
 
+  const updateActiveSessionMessages = (updater: (prev: Message[]) => Message[]) => {
+    setSessions((prevSessions) =>
+      prevSessions.map((session) => {
+        if (session.id === activeSessionId) {
+          const updatedMessages = updater(session.messages);
+          return {
+            ...session,
+            updatedAt: Date.now(),
+            messages: updatedMessages,
+          };
+        }
+        return session;
+      })
+    );
+  };
+
   const handleFeedback = async (traceId: string, value: number) => {
-    // Optimistic UI update
-    setMessages((prev) =>
+    updateActiveSessionMessages((prev) =>
       prev.map((m) =>
         m.traceId === traceId ? { ...m, feedback: value > 0 ? 'positive' : 'negative' } : m
       )
@@ -117,14 +199,30 @@ export const App: React.FC = () => {
       isStreaming: true,
     };
 
-    const updatedMessages = [...messages, userMessage];
-    setMessages([...updatedMessages, initialAssistantMessage]);
+    // Update session title dynamically from first user message if it's default
+    const shouldUpdateTitle = activeSession.title === 'New Conversation' || activeSession.title === 'Welcome Session';
+    const newTitle = shouldUpdateTitle ? text.slice(0, 28) + (text.length > 28 ? '...' : '') : activeSession.title;
+
+    setSessions((prevSessions) =>
+      prevSessions.map((s) => {
+        if (s.id === activeSessionId) {
+          return {
+            ...s,
+            title: newTitle,
+            updatedAt: Date.now(),
+            messages: [...s.messages, userMessage, initialAssistantMessage],
+          };
+        }
+        return s;
+      })
+    );
+
     setIsStreaming(true);
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    const apiMessages = updatedMessages
+    const apiMessages = [...messages, userMessage]
       .filter((m) => m.id !== 'welcome')
       .map((m) => ({ role: m.role, content: m.content }));
 
@@ -178,7 +276,7 @@ export const App: React.FC = () => {
               const traceData = JSON.parse(dataStr);
               currentTraceId = traceData.trace_id;
               currentTraceUrl = traceData.url;
-              setMessages((prev) =>
+              updateActiveSessionMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === assistantMsgId
                     ? { ...msg, traceId: currentTraceId, traceUrl: currentTraceUrl }
@@ -192,7 +290,7 @@ export const App: React.FC = () => {
             try {
               const tokenData = JSON.parse(dataStr);
               accumulatedText += tokenData.text;
-              setMessages((prev) =>
+              updateActiveSessionMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === assistantMsgId ? { ...msg, content: accumulatedText } : msg
                 )
@@ -217,7 +315,7 @@ export const App: React.FC = () => {
               };
 
               setLatestMetric(metric);
-              setMessages((prev) =>
+              updateActiveSessionMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === assistantMsgId
                     ? {
@@ -236,7 +334,7 @@ export const App: React.FC = () => {
             }
           } else if (eventType === 'error') {
             accumulatedText += `\n\n[Error: ${dataStr}]`;
-            setMessages((prev) =>
+            updateActiveSessionMessages((prev) =>
               prev.map((msg) =>
                 msg.id === assistantMsgId
                   ? { ...msg, content: accumulatedText, isStreaming: false }
@@ -250,7 +348,7 @@ export const App: React.FC = () => {
       if (err.name === 'AbortError') {
         console.log('Stream generation aborted by user.');
       } else {
-        setMessages((prev) =>
+        updateActiveSessionMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMsgId
               ? {
@@ -270,8 +368,14 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      {/* Collapsible Left Sidebar */}
-      <Sidebar onNewChat={handleNewChat} messageCount={messages.length} />
+      {/* Collapsible Left Sidebar with Persistent Sessions */}
+      <Sidebar
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={setActiveSessionId}
+        onDeleteSession={handleDeleteSession}
+        onNewChat={handleNewChat}
+      />
 
       {/* Main Chat Interface */}
       <div className="chat-main">
@@ -280,6 +384,7 @@ export const App: React.FC = () => {
           currentModel={currentModel}
           onSelectModel={setCurrentModel}
           onToggleDrawer={() => setIsDrawerOpen(!isDrawerOpen)}
+          onOpenModelModal={() => setIsModelModalOpen(true)}
           isDrawerOpen={isDrawerOpen}
           isStreaming={isStreaming}
         />
@@ -306,6 +411,16 @@ export const App: React.FC = () => {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         latestMetric={latestMetric}
+      />
+
+      {/* Model Orchestrator Modal */}
+      <ModelModal
+        isOpen={isModelModalOpen}
+        onClose={() => setIsModelModalOpen(false)}
+        models={models}
+        onRefreshModels={refreshModels}
+        onSelectModel={setCurrentModel}
+        currentModel={currentModel}
       />
     </div>
   );

@@ -13,6 +13,14 @@ export interface Message {
   feedback?: 'positive' | 'negative';
 }
 
+export interface Session {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: Message[];
+}
+
 export interface ModelDetail {
   name: string;
   size: number;

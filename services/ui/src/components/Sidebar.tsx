@@ -1,12 +1,22 @@
 import React from 'react';
-import { Plus, MessageSquare, Terminal, ShieldCheck, Database } from 'lucide-react';
+import { Plus, MessageSquare, Terminal, ShieldCheck, Database, Trash2, Zap } from 'lucide-react';
+import { Session } from '../types/chat';
 
 interface SidebarProps {
+  sessions: Session[];
+  activeSessionId: string;
+  onSelectSession: (id: string) => void;
+  onDeleteSession: (id: string) => void;
   onNewChat: () => void;
-  messageCount: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onNewChat, messageCount }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  sessions,
+  activeSessionId,
+  onSelectSession,
+  onDeleteSession,
+  onNewChat,
+}) => {
   return (
     <aside className="app-sidebar">
       <button className="new-chat-btn" onClick={onNewChat}>
@@ -14,28 +24,78 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNewChat, messageCount }) => 
         <span>New Conversation</span>
       </button>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '8px 4px 4px' }}>
-          Current Session
-        </div>
+      {/* Persistent Sessions List */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '10px 12px',
-            borderRadius: '10px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            color: '#ffffff',
-            fontSize: '0.85rem',
+            fontSize: '0.75rem',
+            color: 'var(--text-tertiary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            padding: '8px 4px 4px',
           }}
         >
-          <MessageSquare size={16} color="var(--plasma-violet)" />
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Active Discussion ({messageCount} msgs)
-          </span>
+          Conversations ({sessions.length})
         </div>
+
+        {sessions.map((session) => {
+          const isActive = session.id === activeSessionId;
+          return (
+            <div
+              key={session.id}
+              onClick={() => onSelectSession(session.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                background: isActive ? 'rgba(139, 92, 246, 0.16)' : 'rgba(255, 255, 255, 0.03)',
+                border: isActive ? '1px solid var(--plasma-violet)' : '1px solid transparent',
+                color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                <MessageSquare size={15} color={isActive ? 'var(--plasma-cyan)' : 'var(--text-tertiary)'} />
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontWeight: isActive ? 600 : 400,
+                  }}
+                >
+                  {session.title || 'Untitled Chat'}
+                </span>
+              </div>
+
+              {sessions.length > 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteSession(session.id);
+                  }}
+                  title="Delete chat session"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-tertiary)',
+                    padding: '2px',
+                    cursor: 'pointer',
+                    opacity: isActive ? 0.8 : 0.3,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#f87171')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* System Hardware & Status Card */}
@@ -57,16 +117,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNewChat, messageCount }) => 
           <span>Ecosystem Integrity</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Host Runtime:</span>
-          <span style={{ color: '#e2e8f0', fontWeight: 500 }}>macOS Apple Silicon</span>
+          <span>Inference Engine:</span>
+          <span style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Zap size={11} /> macOS Metal GPU
+          </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Docker Allocation:</span>
-          <span style={{ color: '#38bdf8', fontWeight: 500 }}>12GB RAM • 14 CPUs</span>
+          <span>Container Budget:</span>
+          <span style={{ color: '#38bdf8', fontWeight: 500 }}>4GB RAM • 4 CPUs</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Inference Rate:</span>
-          <span style={{ color: '#34d399', fontWeight: 500 }}>~47 tokens/sec</span>
+          <span>Langfuse Tracing:</span>
+          <span style={{ color: '#c4b5fd', fontWeight: 500 }}>Active (v2 Native)</span>
         </div>
       </div>
 
@@ -114,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNewChat, messageCount }) => 
           }}
         >
           <Database size={12} />
-          <span>Ollama :11434</span>
+          <span>Metal :11434</span>
         </a>
       </div>
     </aside>
