@@ -136,17 +136,16 @@ Clicking **"Manage"** in the top header opens the local Model Orchestrator modal
 
 ---
 
-## 🦾 OpenClaw Desktop Integration
+## 🦾 OpenClaw & External Desktop Integration
 
-Point OpenClaw Desktop (or any OpenAI-compatible client) to QuarkDock's Gateway:
+QuarkDock provides an OpenAI-compatible gateway (`http://localhost:8002/v1`) that bridges desktop tools directly to local Apple Metal inference with automated Langfuse tracing:
 
-- **Base URL**: `http://localhost:8002/v1`
-- **API Key**: `sk-local` (or any string)
-- **Model**: `qwen2.5:7b` (or any installed model)
+- **OpenClaw Agent Wiring**: OpenClaw Desktop connects to its local gateway daemon on `ws://127.0.0.1:18789`, and the gateway's model provider points to QuarkDock's `http://localhost:8002/v1` for automatic telemetry tracking.
+- **REST Clients (Chatbox, Jan, Cursor, Continue.dev)**: Point base URL directly to `http://localhost:8002/v1` with model `qwen2.5:7b`.
 
-Every prompt sent through OpenClaw is automatically intercepted, routed to native Ollama via Apple Metal, and recorded in **Langfuse** on `http://localhost:3001` with complete generation spans, tokens/sec, and latency metrics.
+Every prompt sent through the gateway is automatically intercepted, routed to native Ollama via Apple Metal, and recorded in **Langfuse** on `http://localhost:3001` with complete generation spans, tokens/sec, and latency metrics.
 
-> 📖 **Full OpenClaw Guide**: See [`docs/openclaw-desktop-integration.md`](docs/openclaw-desktop-integration.md).
+> 📖 **Full OpenClaw Architecture Guide**: See [`docs/openclaw-desktop-integration.md`](docs/openclaw-desktop-integration.md).
 
 ---
 
