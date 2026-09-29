@@ -114,3 +114,41 @@ class OllamaClient:
                         break
                 except Exception:
                     continue
+
+    async def pull_model(self, model_name: str) -> AsyncIterator[dict[str, Any]]:
+        """Stream model pulling progress from Ollama via async generator."""
+        payload = {"name": model_name, "stream": True}
+        async with self._client.stream(
+            "POST",
+            "/api/pull",
+            content=orjson.dumps(payload),
+            headers={"Content-Type": "application/json"},
+            timeout=httpx.Timeout(connect=10.0, read=1800.0, write=10.0, pool=5.0),
+        ) as response:
+            if response.status_code != 200:
+                error_body = await response.aread()
+                yield {"status": "error", "error": error_body.decode("utf-8", errors="ignore")}
+                return
+
+            async for line in response.aiter_lines():
+                if not line:
+                    continue
+                try:
+                    yield orjson.loads(line)
+                except Exception:
+                    continue
+
+    async def delete_model(self, model_name: str) -> bool:
+        """Delete a model from local Ollama storage."""
+        try:
+            req = self._client.build_request(
+                "DELETE",
+                "/api/delete",
+                content=orjson.dumps({"name": model_name}),
+                headers={"Content-Type": "application/json"},
+            )
+            resp = await self._client.send(req)
+            return resp.status_code == 200
+        except Exception:
+            return False
+

@@ -32,7 +32,6 @@ class LangfuseManager:
                     secret_key=settings.langfuse_secret_key,
                     host=settings.langfuse_host,
                     flush_interval=1.0,
-                    max_retries=2,
                     timeout=5,
                 )
                 logger.info("Langfuse tracing initialized: host=%s", settings.langfuse_host)

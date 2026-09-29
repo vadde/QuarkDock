@@ -12,7 +12,7 @@ from src.clients.langfuse_client import LangfuseManager
 from src.clients.ollama import OllamaClient
 from src.clients.redis_client import RedisManager
 from src.config import get_settings
-from src.routers import chat, feedback, health, models
+from src.routers import chat, feedback, health, models, openai_v1
 
 # Rule 09: Install uvloop for high-efficiency event loop on Linux/macOS
 if sys.platform != "win32":
@@ -81,6 +81,7 @@ def create_app() -> FastAPI:
     app.include_router(models.router)
     app.include_router(chat.router)
     app.include_router(feedback.router)
+    app.include_router(openai_v1.router)
 
     return app
 
