@@ -73,13 +73,14 @@ flowchart TB
 
 | Service | Container Name | Internal Port | Host Port | Purpose |
 |---------|----------------|---------------|-----------|---------|
-| **UI** | `quarkdock-ui` | `3000` | `3000` | Glassmorphic React 19 Chat UI |
-| **API** | `quarkdock-api` | `8000` | `8000` | FastAPI Streaming Server & Proxy |
-| **Ollama** | `quarkdock-ollama` | `11434` | `11434` | Local LLM Engine (Internal & Host access) |
+| **UI** | `quarkdock-ui` | `3000` | `3002` | Glassmorphic React 19 Chat UI (Port 3002 prevents host conflicts) |
+| **API** | `quarkdock-api` | `8000` | `8002` | FastAPI Streaming Server & Proxy (Port 8002 prevents host conflicts) |
+| **Ollama** | `quarkdock-ollama` | `11434` | `11434` | Local LLM Engine (Internal & Host access for OpenClaw Desktop) |
 | **Langfuse** | `quarkdock-langfuse` | `3000` | `3001` | Langfuse Web Dashboard (Host port 3001 avoids conflict) |
 | **PostgreSQL**| `quarkdock-postgres` | `5432` | `5432` | Langfuse Metadata Store |
 | **Redis** | `quarkdock-redis` | `6379` | `6379` | Fast Session Cache & Rate Limiting |
-| **OTEL** | `quarkdock-otel` | `4317 / 4318` | `4317 / 4318` | OpenTelemetry gRPC / HTTP Collector |
+
+> 🦾 **OpenClaw Integration**: See [`docs/openclaw-desktop-integration.md`](docs/openclaw-desktop-integration.md) for instructions on connecting macOS desktop applications to QuarkDock.
 
 ---
 
@@ -97,8 +98,7 @@ QuarkDock is tuned to stay strictly within a **12GB – 14GB Docker memory cap**
 | `quarkdock-api` | 512 MB | 128 MB | Ephemeral |
 | `quarkdock-ui` | 256 MB | 64 MB | Ephemeral |
 | `quarkdock-redis` | 256 MB | 64 MB | `redis_data` named volume |
-| `quarkdock-otel` | 128 MB | 64 MB | Ephemeral |
-| **Total Ecosystem** | **~8.6 GB Max** | **~5.0 GB Steady** | **Headroom: ~3.5 – 5.0 GB in Docker** |
+| **Total Ecosystem** | **~8.5 GB Max** | **~5.0 GB Steady** | **Headroom: > 6.0 GB in Docker** |
 
 ### Docker Desktop Sizing Requirements
 - **Minimum for testing**: 10.0 GB RAM, 8 CPUs (suitable for `qwen2.5:3b` or `gemma3:4b`)
@@ -127,10 +127,10 @@ make dev
 ```
 
 ### 4. Access Services
-- **Chat UI**: [http://localhost:3000](http://localhost:3000)
-- **FastAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Langfuse Dashboard**: [http://localhost:3001](http://localhost:3001)
-- **Ollama Engine**: [http://localhost:11434](http://localhost:11434) (ready for OpenClaw Desktop)
+- **Chat UI**: [http://localhost:3002](http://localhost:3002) (Glassmorphic React 19 UI)
+- **FastAPI Docs**: [http://localhost:8002/docs](http://localhost:8002/docs) (Interactive OpenAPI documentation)
+- **Langfuse Dashboard**: [http://localhost:3001](http://localhost:3001) (Observability & trace metrics)
+- **Ollama Engine**: [http://localhost:11434](http://localhost:11434) (Host access for OpenClaw Desktop)
 
 ---
 
