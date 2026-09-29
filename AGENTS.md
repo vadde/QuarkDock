@@ -29,6 +29,7 @@ Every agent and human contributor MUST follow these rules:
 | [Rule 07](file:///.agents/rules/07-service-context-preservation.md) | **Service Context Preservation** | Service Triad: `CONTEXT.md`, `DEVLOG.md`, `STATUS.md` in every service directory. |
 | [Rule 08](file:///.agents/rules/08-failure-modes-recovery.md) | **Failure Modes & Recovery** | Automated patterns for model eviction, telemetry failure, SSE disconnects, and port conflicts. |
 | [Rule 09](file:///.agents/rules/09-python-efficiency.md) | **Python Efficiency Manifesto** | 🔴 Critical: `__slots__`, generators, `orjson`, `uvloop`, connection pooling, zero-copy slicing, O(1) structures. |
+| [Rule 10](file:///.agents/rules/10-intellectual-honesty-critique.md) | **Intellectual Honesty & Critique** | Anti-Yes-Man protocol, dialectic critique & praise quadrant, rigorous self-critique. |
 
 ---
 
