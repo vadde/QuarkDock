@@ -118,6 +118,7 @@ export const App: React.FC = () => {
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(100);
   const isUserScrolledUpRef = useRef(false);
+  const isTeleportingRef = useRef(false);
 
   // Active session and its messages
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
@@ -145,35 +146,50 @@ export const App: React.FC = () => {
     const progress = maxScroll > 0 ? Math.min(100, Math.max(0, Math.round((scrollTop / maxScroll) * 100))) : 100;
     setScrollProgress(progress);
 
-    // Show Apex (Top) button when scrolled down past 250px
-    setShowScrollTop(scrollTop > 250);
+    // Show Apex (Top) button when scrolled down past 60px
+    setShowScrollTop(scrollTop > 60);
 
     // Bottom threshold: if within 75px, user is anchored to bottom
     const isNearBottom = distanceToBottom < 75;
     setShowScrollBottom(!isNearBottom);
 
-    if (isNearBottom) {
-      setIsUserScrolledUp(false);
-      isUserScrolledUpRef.current = false;
-    } else {
-      // User has intentionally scrolled up to read earlier content
-      setIsUserScrolledUp(true);
-      isUserScrolledUpRef.current = true;
+    // If actively teleporting via button, do not let transient scroll events override isUserScrolledUp
+    if (!isTeleportingRef.current) {
+      if (isNearBottom) {
+        setIsUserScrolledUp(false);
+        isUserScrolledUpRef.current = false;
+      } else {
+        // User has intentionally scrolled up to read earlier content
+        setIsUserScrolledUp(true);
+        isUserScrolledUpRef.current = true;
+      }
     }
   }, []);
 
   // Teleport smoothly to Apex (Top)
   const scrollToTop = () => {
+    // Lock auto-scroll out so the streaming rAF loop doesn't fight us
+    isTeleportingRef.current = true;
+    setIsUserScrolledUp(true);
+    isUserScrolledUpRef.current = true;
+    setShowScrollTop(false);
+    setShowScrollBottom(true);
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({
         top: 0,
         behavior: 'smooth',
       });
+      // After smooth scroll completes, release teleport lock and update scroll indicators
+      setTimeout(() => {
+        isTeleportingRef.current = false;
+        handleScroll();
+      }, 500);
     }
   };
 
   // Teleport smoothly to Nadir (Bottom) and re-engage auto-scroll anchor
   const scrollToBottom = () => {
+    isTeleportingRef.current = true;
     setIsUserScrolledUp(false);
     isUserScrolledUpRef.current = false;
     setShowScrollBottom(false);
@@ -182,6 +198,10 @@ export const App: React.FC = () => {
         top: scrollContainerRef.current.scrollHeight,
         behavior: 'smooth',
       });
+      setTimeout(() => {
+        isTeleportingRef.current = false;
+        handleScroll();
+      }, 500);
     }
   };
 
@@ -193,11 +213,15 @@ export const App: React.FC = () => {
         requestAnimationFrame(() => {
           if (container && !isUserScrolledUpRef.current) {
             container.scrollTop = container.scrollHeight;
+            // Programmatic scrollTop assignment may not fire onScroll in all
+            // browsers; explicitly recalculate scroll indicators so the HUD
+            // stays in sync (fixes the "Top button invisible during stream" bug).
+            handleScroll();
           }
         });
       }
     }
-  }, [messages]);
+  }, [messages, handleScroll]);
 
   // When switching sessions, smoothly anchor to bottom of new conversation
   useEffect(() => {

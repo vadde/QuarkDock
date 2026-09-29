@@ -11,7 +11,7 @@ interface ScrollNavigationProps {
   onScrollToBottom: () => void;
 }
 
-const STORAGE_KEY_POS = 'quarkdock_hud_pos_v2';
+const STORAGE_KEY_POS = 'quarkdock_hud_pos_v3';
 
 /**
  * ⚛️ Quantum Viewport Teleport & Navigation HUD (Year 2500 Vision)
@@ -152,8 +152,8 @@ export const ScrollNavigation: React.FC<ScrollNavigationProps> = ({
     }
   };
 
-  // If neither navigation action is needed, hide HUD
-  if (!showScrollTop && !showScrollBottom && !(isStreaming && isUserScrolledUp)) {
+  // If neither navigation action is needed AND not streaming, hide HUD
+  if (!showScrollTop && !showScrollBottom && !isStreaming) {
     return null;
   }
 
@@ -179,7 +179,7 @@ export const ScrollNavigation: React.FC<ScrollNavigationProps> = ({
       onDoubleClick={handleDoubleClick}
       role="navigation"
       aria-label="Chat Viewport Navigation"
-      title={position ? "Double-click to reset to default center" : "Drag anywhere to reposition"}
+      title={position ? "Double-click to reset to top menu bar" : "Drag anywhere to reposition"}
     >
       {/* Ergonomic Drag Grip */}
       <div className="quantum-drag-handle" title="Drag to reposition anywhere on screen">
@@ -238,7 +238,7 @@ export const ScrollNavigation: React.FC<ScrollNavigationProps> = ({
         <button
           className="quantum-reset-btn"
           onClick={handleResetPosition}
-          title="Snap back to default center position"
+          title="Snap back to top menu bar"
           aria-label="Reset position"
         >
           <RotateCcw size={11} />

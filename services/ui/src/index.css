@@ -733,30 +733,31 @@ body::after {
 
 .quantum-nav-dock {
   position: absolute;
-  bottom: 112px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
-  background: rgba(14, 14, 24, 0.78);
+  padding: 4px 10px;
+  height: 36px;
+  background: rgba(14, 14, 24, 0.82);
   backdrop-filter: blur(28px) saturate(200%);
   -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 30px;
   box-shadow: 
-    0 12px 32px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.5),
     0 0 16px rgba(139, 92, 246, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  z-index: 15;
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  z-index: 30;
   pointer-events: auto;
   user-select: none;
   touch-action: none;
 }
 
 .quantum-nav-dock:not(.custom-positioned) {
-  animation: quantumFadeUp 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: quantumFadeDown 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .quantum-nav-dock.is-dragging {
@@ -805,10 +806,10 @@ body::after {
   transform: rotate(-45deg);
 }
 
-@keyframes quantumFadeUp {
+@keyframes quantumFadeDown {
   from {
     opacity: 0;
-    transform: translate(-50%, 14px) scale(0.95);
+    transform: translate(-50%, -10px) scale(0.95);
   }
   to {
     opacity: 1;
