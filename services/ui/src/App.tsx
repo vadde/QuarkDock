@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MessageItem } from './components/MessageItem';
 import { InputArea } from './components/InputArea';
 import { TraceDrawer } from './components/TraceDrawer';
 import { ModelModal } from './components/ModelModal';
+import { ScrollNavigation } from './components/ScrollNavigation';
 import { Message, ModelDetail, Session, TraceMetric } from './types/chat';
 
 const STORAGE_KEY = 'quarkdock_chat_sessions_v2';
@@ -51,6 +52,14 @@ export const App: React.FC = () => {
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Quantum Navigation & Scroll Physics State
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(100);
+  const isUserScrolledUpRef = useRef(false);
 
   // Active session and its messages
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
@@ -65,14 +74,85 @@ export const App: React.FC = () => {
     }
   }, [sessions]);
 
-  // Auto-scroll to bottom of chat
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Viewport scroll physics tracker
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const maxScroll = scrollHeight - clientHeight;
+    const distanceToBottom = maxScroll - scrollTop;
+
+    // Spatial depth percentage (0 - 100%)
+    const progress = maxScroll > 0 ? Math.min(100, Math.max(0, Math.round((scrollTop / maxScroll) * 100))) : 100;
+    setScrollProgress(progress);
+
+    // Show Apex (Top) button when scrolled down past 250px
+    setShowScrollTop(scrollTop > 250);
+
+    // Bottom threshold: if within 75px, user is anchored to bottom
+    const isNearBottom = distanceToBottom < 75;
+    setShowScrollBottom(!isNearBottom);
+
+    if (isNearBottom) {
+      setIsUserScrolledUp(false);
+      isUserScrolledUpRef.current = false;
+    } else {
+      // User has intentionally scrolled up to read earlier content
+      setIsUserScrolledUp(true);
+      isUserScrolledUpRef.current = true;
+    }
+  }, []);
+
+  // Teleport smoothly to Apex (Top)
+  const scrollToTop = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }
   };
 
+  // Teleport smoothly to Nadir (Bottom) and re-engage auto-scroll anchor
+  const scrollToBottom = () => {
+    setIsUserScrolledUp(false);
+    isUserScrolledUpRef.current = false;
+    setShowScrollBottom(false);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // Auto-scroll anchor during streaming: ONLY pins to bottom if user has NOT scrolled up!
   useEffect(() => {
-    scrollToBottom();
+    if (!isUserScrolledUpRef.current) {
+      const container = scrollContainerRef.current;
+      if (container) {
+        requestAnimationFrame(() => {
+          if (container && !isUserScrolledUpRef.current) {
+            container.scrollTop = container.scrollHeight;
+          }
+        });
+      }
+    }
   }, [messages]);
+
+  // When switching sessions, smoothly anchor to bottom of new conversation
+  useEffect(() => {
+    setIsUserScrolledUp(false);
+    isUserScrolledUpRef.current = false;
+    setShowScrollBottom(false);
+    setShowScrollTop(false);
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
+    }, 60);
+  }, [activeSessionId]);
 
   // Fetch available models from local API
   const refreshModels = () => {
@@ -98,6 +178,10 @@ export const App: React.FC = () => {
       abortControllerRef.current.abort();
     }
     setIsStreaming(false);
+    setIsUserScrolledUp(false);
+    isUserScrolledUpRef.current = false;
+    setShowScrollBottom(false);
+    setShowScrollTop(false);
 
     const newSession: Session = {
       id: `session-${Date.now()}`,
@@ -218,6 +302,19 @@ export const App: React.FC = () => {
     );
 
     setIsStreaming(true);
+    setIsUserScrolledUp(false);
+    isUserScrolledUpRef.current = false;
+    setShowScrollBottom(false);
+
+    // Smoothly scroll down so prompt is visible
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }, 40);
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -390,12 +487,27 @@ export const App: React.FC = () => {
         />
 
         {/* Message Stream */}
-        <div className="message-stream">
+        <div
+          className="message-stream"
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+        >
           {messages.map((message) => (
             <MessageItem key={message.id} message={message} onFeedback={handleFeedback} />
           ))}
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Quantum Viewport Navigation HUD (Year 2500 Vision) */}
+        <ScrollNavigation
+          showScrollTop={showScrollTop}
+          showScrollBottom={showScrollBottom}
+          isStreaming={isStreaming}
+          isUserScrolledUp={isUserScrolledUp}
+          scrollProgress={scrollProgress}
+          onScrollToTop={scrollToTop}
+          onScrollToBottom={scrollToBottom}
+        />
 
         {/* Floating Glass Input Area */}
         <InputArea
