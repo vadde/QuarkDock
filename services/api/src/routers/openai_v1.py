@@ -128,6 +128,8 @@ async def chat_completions(request: Request, payload: OpenAIChatRequest):
                     usage={"total_tokens": token_count},
                     metadata={"duration_ms": duration_ms},
                 )
+                if langfuse_client:
+                    await langfuse_client.flush()
             except Exception:
                 pass
 
@@ -222,6 +224,8 @@ async def chat_completions(request: Request, payload: OpenAIChatRequest):
                         usage={"total_tokens": token_count},
                         metadata={"duration_ms": duration_ms},
                     )
+                    if langfuse_client:
+                        await langfuse_client.flush()
                 except Exception:
                     pass
 

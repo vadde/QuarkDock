@@ -63,6 +63,8 @@ class LangfuseManager:
         user_id: str | None = None,
         session_id: str | None = None,
         metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Create a new root trace for a chat conversation."""
         if not self._client:
@@ -73,6 +75,8 @@ class LangfuseManager:
                 user_id=user_id,
                 session_id=session_id,
                 metadata=metadata or {},
+                tags=tags or [],
+                **kwargs,
             )
         except Exception as e:
             logger.warning("Failed to create Langfuse trace: %s", e)

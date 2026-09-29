@@ -94,6 +94,8 @@ async def chat_completion(request: Request, payload: ChatRequest) -> StreamingRe
                     output=completed_text,
                     usage={"total_tokens": token_count},
                 )
+                if langfuse_client:
+                    await langfuse_client.flush()
             except Exception:
                 pass
 
