@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowUp, ArrowDown, Compass } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowUp, ArrowDown, Compass, GripVertical, RotateCcw } from 'lucide-react';
 
 interface ScrollNavigationProps {
   showScrollTop: boolean;
@@ -11,10 +11,14 @@ interface ScrollNavigationProps {
   onScrollToBottom: () => void;
 }
 
+const STORAGE_KEY_POS = 'quarkdock_hud_pos_v2';
+
 /**
  * ⚛️ Quantum Viewport Teleport & Navigation HUD (Year 2500 Vision)
- * Provides seamless spatial orientation, one-click Apex/Nadir navigation,
- * and live-stream pulse detection when the viewport is decoupled from generation.
+ * - Freeform Drag & Drop: Drag anywhere on screen to prevent content collision
+ * - Persistent spatial coordinates across browser sessions (localStorage)
+ * - 1-Click reset to default center docking
+ * - Apex/Nadir teleports & Live Generation plasma pulse beacon
  */
 export const ScrollNavigation: React.FC<ScrollNavigationProps> = ({
   showScrollTop,
@@ -25,7 +29,130 @@ export const ScrollNavigation: React.FC<ScrollNavigationProps> = ({
   onScrollToTop,
   onScrollToBottom,
 }) => {
-  // If neither button is needed, don't render HUD
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const hudRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<{
+    pointerX: number;
+    pointerY: number;
+    elemX: number;
+    elemY: number;
+    hasMoved: boolean;
+  }>({ pointerX: 0, pointerY: 0, elemX: 0, elemY: 0, hasMoved: false });
+
+  // Load custom position from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_POS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          setPosition({ x: parsed.x, y: parsed.y });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore HUD position:', e);
+    }
+  }, []);
+
+  // Pointer drag event handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Only primary mouse button / touch
+    if (e.button !== 0) return;
+
+    // Do not initiate drag if user clicked an action button or reset button
+    const target = e.target as HTMLElement;
+    if (target.closest('.quantum-nav-btn') || target.closest('.quantum-reset-btn')) {
+      return;
+    }
+
+    const hud = hudRef.current;
+    if (!hud) return;
+
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
+    const hudRect = hud.getBoundingClientRect();
+    const parentRect = hud.parentElement?.getBoundingClientRect() || {
+      left: 0,
+      top: 0,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+
+    dragStartRef.current = {
+      pointerX: e.clientX,
+      pointerY: e.clientY,
+      elemX: hudRect.left - parentRect.left,
+      elemY: hudRect.top - parentRect.top,
+      hasMoved: false,
+    };
+
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !hudRef.current) return;
+
+    const deltaX = e.clientX - dragStartRef.current.pointerX;
+    const deltaY = e.clientY - dragStartRef.current.pointerY;
+
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+      dragStartRef.current.hasMoved = true;
+    }
+
+    const parent = hudRef.current.parentElement;
+    if (!parent) return;
+
+    const parentRect = parent.getBoundingClientRect();
+    const hudRect = hudRef.current.getBoundingClientRect();
+
+    let newX = dragStartRef.current.elemX + deltaX;
+    let newY = dragStartRef.current.elemY + deltaY;
+
+    // Constrain within parent bounds with a 12px margin
+    const maxX = Math.max(0, parentRect.width - hudRect.width - 12);
+    const maxY = Math.max(0, parentRect.height - hudRect.height - 12);
+
+    newX = Math.min(Math.max(12, newX), maxX);
+    newY = Math.min(Math.max(12, newY), maxY);
+
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+
+    if (dragStartRef.current.hasMoved && position) {
+      try {
+        localStorage.setItem(STORAGE_KEY_POS, JSON.stringify(position));
+      } catch (err) {
+        console.warn('Failed to save HUD position:', err);
+      }
+    }
+  };
+
+  const handleResetPosition = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPosition(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY_POS);
+    } catch {}
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.quantum-nav-btn')) {
+      handleResetPosition(e);
+    }
+  };
+
+  // If neither navigation action is needed, hide HUD
   if (!showScrollTop && !showScrollBottom && !(isStreaming && isUserScrolledUp)) {
     return null;
   }
@@ -33,7 +160,32 @@ export const ScrollNavigation: React.FC<ScrollNavigationProps> = ({
   const isLiveStreamActive = isStreaming && isUserScrolledUp;
 
   return (
-    <div className="quantum-nav-dock" role="navigation" aria-label="Chat Viewport Navigation">
+    <div
+      ref={hudRef}
+      className={`quantum-nav-dock ${isDragging ? 'is-dragging' : ''} ${position ? 'custom-positioned' : ''}`}
+      style={
+        position
+          ? {
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              bottom: 'auto',
+              transform: 'none',
+            }
+          : undefined
+      }
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onDoubleClick={handleDoubleClick}
+      role="navigation"
+      aria-label="Chat Viewport Navigation"
+      title={position ? "Double-click to reset to default center" : "Drag anywhere to reposition"}
+    >
+      {/* Ergonomic Drag Grip */}
+      <div className="quantum-drag-handle" title="Drag to reposition anywhere on screen">
+        <GripVertical size={13} className="drag-icon" />
+      </div>
+
       {/* Teleport to Apex (Top) */}
       {showScrollTop && (
         <button
@@ -78,6 +230,18 @@ export const ScrollNavigation: React.FC<ScrollNavigationProps> = ({
               <ArrowDown size={14} className="quantum-icon" />
             </>
           )}
+        </button>
+      )}
+
+      {/* Reset Position Button (visible when custom positioned) */}
+      {position && (
+        <button
+          className="quantum-reset-btn"
+          onClick={handleResetPosition}
+          title="Snap back to default center position"
+          aria-label="Reset position"
+        >
+          <RotateCcw size={11} />
         </button>
       )}
     </div>

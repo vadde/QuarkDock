@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MessageSquare, Terminal, ShieldCheck, Database, Trash2, Zap } from 'lucide-react';
+import { Plus, MessageSquare, Terminal, ShieldCheck, Database, Trash2, Zap, PanelLeftClose } from 'lucide-react';
 import { Session } from '../types/chat';
 
 interface SidebarProps {
@@ -8,6 +8,8 @@ interface SidebarProps {
   onSelectSession: (id: string) => void;
   onDeleteSession: (id: string) => void;
   onNewChat: () => void;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -16,13 +18,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectSession,
   onDeleteSession,
   onNewChat,
+  isOpen,
+  onToggle,
 }) => {
   return (
-    <aside className="app-sidebar">
-      <button className="new-chat-btn" onClick={onNewChat}>
-        <Plus size={18} />
-        <span>New Conversation</span>
-      </button>
+    <aside className={`app-sidebar ${!isOpen ? 'collapsed' : ''}`} aria-hidden={!isOpen}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button className="new-chat-btn" onClick={onNewChat} style={{ flex: 1 }}>
+          <Plus size={18} />
+          <span>New Conversation</span>
+        </button>
+        <button
+          className="sidebar-inner-close-btn"
+          onClick={onToggle}
+          title="Collapse Sidebar (⌘B)"
+          aria-label="Collapse Sidebar"
+        >
+          <PanelLeftClose size={16} />
+        </button>
+      </div>
 
       {/* Persistent Sessions List */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>

@@ -50,6 +50,37 @@ export const App: React.FC = () => {
   const [isModelModalOpen, setIsModelModalOpen] = useState<boolean>(false);
   const [latestMetric, setLatestMetric] = useState<TraceMetric | null>(null);
 
+  // Collapsible sidebar state with localStorage persistence
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('quarkdock_sidebar_open') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('quarkdock_sidebar_open', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  // Global keyboard shortcut: Cmd+B / Ctrl+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        handleToggleSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleToggleSidebar]);
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -472,6 +503,8 @@ export const App: React.FC = () => {
         onSelectSession={setActiveSessionId}
         onDeleteSession={handleDeleteSession}
         onNewChat={handleNewChat}
+        isOpen={isSidebarOpen}
+        onToggle={handleToggleSidebar}
       />
 
       {/* Main Chat Interface */}
@@ -484,6 +517,8 @@ export const App: React.FC = () => {
           onOpenModelModal={() => setIsModelModalOpen(true)}
           isDrawerOpen={isDrawerOpen}
           isStreaming={isStreaming}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={handleToggleSidebar}
         />
 
         {/* Message Stream */}

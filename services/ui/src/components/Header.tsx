@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Activity, ExternalLink, Sparkles } from 'lucide-react';
+import { Cpu, Activity, ExternalLink, Sparkles, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { ModelDetail } from '../types/chat';
 
 interface HeaderProps {
@@ -10,6 +10,8 @@ interface HeaderProps {
   onOpenModelModal: () => void;
   isDrawerOpen: boolean;
   isStreaming: boolean;
+  isSidebarOpen: boolean;
+  onToggleSidebar: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,10 +22,20 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenModelModal,
   isDrawerOpen,
   isStreaming,
+  isSidebarOpen,
+  onToggleSidebar,
 }) => {
   return (
     <header className="app-header">
       <div className="logo-group">
+        <button
+          className="sidebar-toggle-btn"
+          onClick={onToggleSidebar}
+          title={isSidebarOpen ? "Collapse Conversations (⌘B)" : "Expand Conversations (⌘B)"}
+          aria-label="Toggle sessions sidebar"
+        >
+          {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+        </button>
         <div className="logo-badge">
           <Sparkles size={20} color="#ffffff" />
         </div>
