@@ -6,7 +6,13 @@ import { InputArea } from './components/InputArea';
 import { TraceDrawer } from './components/TraceDrawer';
 import { ModelModal } from './components/ModelModal';
 import { ScrollNavigation } from './components/ScrollNavigation';
-import { Message, ModelDetail, Session, TraceMetric } from './types/chat';
+import { Message, ModelDetail, Session, TraceMetric, LLMSettings } from './types/chat';
+
+const DEFAULT_LLM_SETTINGS: LLMSettings = {
+  temperature: 0.7,
+  top_p: 0.9,
+  systemPrompt: '',
+};
 
 const STORAGE_KEY = 'quarkdock_chat_sessions_v2';
 
@@ -49,6 +55,27 @@ export const App: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [isModelModalOpen, setIsModelModalOpen] = useState<boolean>(false);
   const [latestMetric, setLatestMetric] = useState<TraceMetric | null>(null);
+
+  // LLM Hyperparameters state with localStorage persistence
+  const [llmSettings, setLlmSettings] = useState<LLMSettings>(() => {
+    try {
+      const saved = localStorage.getItem('quarkdock_llm_settings_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.temperature === 'number' && typeof parsed.top_p === 'number') {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_LLM_SETTINGS;
+  });
+
+  const handleUpdateLLMSettings = (newSettings: LLMSettings) => {
+    setLlmSettings(newSettings);
+    try {
+      localStorage.setItem('quarkdock_llm_settings_v1', JSON.stringify(newSettings));
+    } catch (e) {}
+  };
 
   // Collapsible sidebar state with localStorage persistence
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -362,6 +389,9 @@ export const App: React.FC = () => {
           model: currentModel,
           messages: apiMessages,
           stream: true,
+          temperature: llmSettings.temperature,
+          top_p: llmSettings.top_p,
+          system_prompt: llmSettings.systemPrompt || undefined,
         }),
         signal: abortController.signal,
       });
@@ -568,6 +598,8 @@ export const App: React.FC = () => {
         onRefreshModels={refreshModels}
         onSelectModel={setCurrentModel}
         currentModel={currentModel}
+        llmSettings={llmSettings}
+        onUpdateLLMSettings={handleUpdateLLMSettings}
       />
     </div>
   );

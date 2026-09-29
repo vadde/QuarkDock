@@ -107,8 +107,8 @@ def evaluate_with_judge(query: str, response: str, rubric_prompt: str) -> tuple[
     return score, judge_text.strip()
 
 
-def submit_feedback(trace_id: str, rubric_name: str, score: float):
-    """Publish score to Langfuse via QuarkDock feedback API."""
+def submit_feedback(trace_id: str, rubric_name: str, score: float, reasoning: str = ""):
+    """Publish score to Langfuse via QuarkDock feedback API with full judge reasoning."""
     if not trace_id:
         return
     try:
@@ -116,6 +116,7 @@ def submit_feedback(trace_id: str, rubric_name: str, score: float):
             "trace_id": trace_id,
             "name": f"judge_{rubric_name}",
             "value": score / 5.0,
+            "comment": reasoning[:1000] if reasoning else None,
         }).encode("utf-8")
         req = urllib.request.Request(
             f"{API_BASE}/api/v1/feedback",
@@ -145,16 +146,16 @@ def main():
         print(f"   Generated {len(answer.split())} words in {duration_ms/1000:.2f}s (Trace: {trace_id[:8]}...)")
 
         # Judge on Correctness
-        corr_score, _ = evaluate_with_judge(item["query"], answer, CORRECTNESS_RUBRIC.prompt_template)
-        submit_feedback(trace_id, "correctness", corr_score)
+        corr_score, corr_reason = evaluate_with_judge(item["query"], answer, CORRECTNESS_RUBRIC.prompt_template)
+        submit_feedback(trace_id, "correctness", corr_score, corr_reason)
 
         # Judge on Conciseness
-        conc_score, _ = evaluate_with_judge(item["query"], answer, CONCISENESS_RUBRIC.prompt_template)
-        submit_feedback(trace_id, "conciseness", conc_score)
+        conc_score, conc_reason = evaluate_with_judge(item["query"], answer, CONCISENESS_RUBRIC.prompt_template)
+        submit_feedback(trace_id, "conciseness", conc_score, conc_reason)
 
         # Judge on Helpfulness
-        help_score, _ = evaluate_with_judge(item["query"], answer, HELPFULNESS_RUBRIC.prompt_template)
-        submit_feedback(trace_id, "helpfulness", help_score)
+        help_score, help_reason = evaluate_with_judge(item["query"], answer, HELPFULNESS_RUBRIC.prompt_template)
+        submit_feedback(trace_id, "helpfulness", help_score, help_reason)
 
         print(f"   Scores: Correctness={corr_score}/5 | Conciseness={conc_score}/5 | Helpfulness={help_score}/5\n")
 

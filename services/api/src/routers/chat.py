@@ -43,7 +43,9 @@ async def chat_completion(request: Request, payload: ChatRequest) -> StreamingRe
         try:
             trace = langfuse_client.create_trace(
                 name="chat_turn",
-                metadata={"model": payload.model, "temperature": payload.temperature},
+                input=messages_payload,
+                metadata={"model": payload.model, "temperature": payload.temperature, "top_p": payload.top_p},
+                tags=["chat_ui", payload.model],
             )
             if trace:
                 trace_id = getattr(trace, "id", trace_id)
@@ -87,15 +89,23 @@ async def chat_completion(request: Request, payload: ChatRequest) -> StreamingRe
         elapsed_ms = (time.perf_counter() - start_time) * 1000
         completed_text = "".join(full_response_parts)
 
-        # Finalize Langfuse generation span
+        # Finalize Langfuse generation span and root trace
         if generation:
             try:
                 generation.end(
                     output=completed_text,
                     usage={"total_tokens": token_count},
                 )
-                if langfuse_client:
-                    await langfuse_client.flush()
+            except Exception:
+                pass
+        if trace:
+            try:
+                trace.update(output=completed_text)
+            except Exception:
+                pass
+        if langfuse_client:
+            try:
+                await langfuse_client.flush()
             except Exception:
                 pass
 

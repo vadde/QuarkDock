@@ -64,6 +64,8 @@ class LangfuseManager:
         session_id: str | None = None,
         metadata: dict[str, Any] | None = None,
         tags: list[str] | None = None,
+        input: Any = None,
+        output: Any = None,
         **kwargs: Any,
     ) -> Any:
         """Create a new root trace for a chat conversation."""
@@ -76,11 +78,35 @@ class LangfuseManager:
                 session_id=session_id,
                 metadata=metadata or {},
                 tags=tags or [],
+                input=input,
+                output=output,
                 **kwargs,
             )
         except Exception as e:
             logger.warning("Failed to create Langfuse trace: %s", e)
             return None
+
+    def update_trace(
+        self,
+        trace_id: str,
+        output: Any = None,
+        metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Update an existing trace with completed output or additional metadata."""
+        if not self._client:
+            return
+        try:
+            self._client.trace(
+                id=trace_id,
+                output=output,
+                metadata=metadata,
+                tags=tags,
+                **kwargs,
+            )
+        except Exception as e:
+            logger.warning("Failed to update Langfuse trace %s: %s", trace_id, e)
 
     def create_score(
         self,

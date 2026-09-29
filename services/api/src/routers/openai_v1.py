@@ -84,6 +84,7 @@ async def chat_completions(request: Request, payload: OpenAIChatRequest):
         try:
             trace = langfuse_client.create_trace(
                 name="openclaw_chat_completion",
+                input=messages_payload,
                 metadata={
                     "source": "openclaw_desktop",
                     "client": "openai_v1_gateway",
@@ -128,8 +129,16 @@ async def chat_completions(request: Request, payload: OpenAIChatRequest):
                     usage={"total_tokens": token_count},
                     metadata={"duration_ms": duration_ms},
                 )
-                if langfuse_client:
-                    await langfuse_client.flush()
+            except Exception:
+                pass
+        if trace:
+            try:
+                trace.update(output=result_text)
+            except Exception:
+                pass
+        if langfuse_client:
+            try:
+                await langfuse_client.flush()
             except Exception:
                 pass
 
@@ -224,8 +233,16 @@ async def chat_completions(request: Request, payload: OpenAIChatRequest):
                         usage={"total_tokens": token_count},
                         metadata={"duration_ms": duration_ms},
                     )
-                    if langfuse_client:
-                        await langfuse_client.flush()
+                except Exception:
+                    pass
+            if trace:
+                try:
+                    trace.update(output=completed_text)
+                except Exception:
+                    pass
+            if langfuse_client:
+                try:
+                    await langfuse_client.flush()
                 except Exception:
                     pass
 

@@ -36,3 +36,10 @@ export interface TraceMetric {
   durationMs: number;
   tokensPerSec: number;
 }
+
+export interface LLMSettings {
+  temperature: number;
+  top_p: number;
+  systemPrompt: string;
+}
+
