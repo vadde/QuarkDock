@@ -1,42 +1,15 @@
 # ==============================================================================
 # ⚛️ QuarkDock Multi-Service Container Orchestration
 # ==============================================================================
-# Hardware Budget: Tuned for Apple Silicon (MacBook M5 Pro 24GB Unified Memory)
-# Total Eco-Cap: ~8.6 GB Max under load (Comfortably within 12-14 GB Docker VM)
+# Architecture: Native Hybrid
+#   - LLM Engine (Ollama): Runs natively on macOS host for Apple Metal GPU acceleration
+#   - Services (API, UI, Langfuse, Postgres, Redis): Containerized in Docker
+# Hardware Budget: Docker Desktop only needs 2 - 4 GB RAM and 4 CPUs
 # ==============================================================================
 
 services:
   # ----------------------------------------------------------------------------
-  # 1. Local LLM Engine (Ollama)
-  # ----------------------------------------------------------------------------
-  ollama:
-    image: ollama/ollama:latest
-    container_name: quarkdock-ollama
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-24h}
-      - OLLAMA_HOST=0.0.0.0
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "ollama list > /dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 6.0G
-        reservations:
-          memory: 4.0G
-    networks:
-      - quarkdock-net
-
-  # ----------------------------------------------------------------------------
-  # 2. Database for Langfuse (PostgreSQL 16)
+  # 1. Database for Langfuse (PostgreSQL 16)
   # ----------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
@@ -129,15 +102,15 @@ services:
       dockerfile: Dockerfile
     container_name: quarkdock-api
     depends_on:
-      ollama:
-        condition: service_healthy
       redis:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
       - APP_ENV=development
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       - REDIS_URL=redis://redis:6379/0
       - LANGFUSE_HOST=http://langfuse:3000
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-quarkdock-local}
@@ -185,8 +158,6 @@ services:
 # Persistent Storage Volumes
 # ------------------------------------------------------------------------------
 volumes:
-  ollama_data:
-    name: quarkdock_ollama_data
   pg_data:
     name: quarkdock_pg_data
   redis_data:
