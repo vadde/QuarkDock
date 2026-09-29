@@ -35,12 +35,46 @@ const normalizeMath = (text: string): string => {
   // 2. Convert \( ... \) to $ ... $ (inline math)
   processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math}$`);
 
-  // 3. Detect parenthetical expressions with LaTeX math keywords: e.g. (A \lor \neg B = \text{true})
+  // 3. Detect parenthetical expressions with LaTeX math keywords OUTSIDE of existing $ blocks
   const mathCommands = "(?:lor|land|neg|text|rightarrow|leftarrow|implies|iff|forall|exists|in|notin|subset|subseteq|cap|cup|times|div|pm|leq|geq|neq|approx|equiv|sum|prod|int|frac|sqrt|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|phi|omega|infty|vee|wedge|top|bot)";
   const parenMathRegex = new RegExp(`\\(([^()\\n]*\\\\${mathCommands}[^()\\n]*)\\)`, "g");
-  processed = processed.replace(parenMathRegex, (_, inner) => `$(${inner})$`);
 
-  // Restore code blocks
+  const parts = processed.split("$");
+  // Even indexes (0, 2, 4...) are OUTSIDE math blocks
+  for (let i = 0; i < parts.length; i += 2) {
+    parts[i] = parts[i].replace(parenMathRegex, (_, inner) => `$(${inner})$`);
+  }
+  processed = parts.join("$");
+
+  // 4. Merge adjacent math blocks connected by LaTeX operators (e.g. "$A$ \land $B$" -> "$A \land B$")
+  for (let i = 0; i < 5; i++) {
+    const next = processed.replace(
+      /\$([^\$\n]+?)\$\s*(\\[a-zA-Z]+|[=+\-*\/\u2227\u2228])\s*\$([^\$\n]+?)\$/g,
+      (_, g1, op, g3) => `$${g1} ${op} ${g3}$`
+    );
+    if (next === processed) break;
+    processed = next;
+  }
+
+  // 5. Wrap any remaining isolated LaTeX commands outside of $ blocks
+  const parts2 = processed.split("$");
+  const isolatedRegex = new RegExp(`\\\\(${mathCommands}(?:\\{[^}]*\\})?)`, "g");
+  for (let i = 0; i < parts2.length; i += 2) {
+    parts2[i] = parts2[i].replace(isolatedRegex, (_, cmd) => `$\\${cmd}$`);
+  }
+  processed = parts2.join("$");
+
+  // 6. Final merge pass in case step 5 created adjacent blocks
+  for (let i = 0; i < 3; i++) {
+    const next = processed.replace(
+      /\$([^\$\n]+?)\$\s*(\\[a-zA-Z]+|[=+\-*\/\u2227\u2228])\s*\$([^\$\n]+?)\$/g,
+      (_, g1, op, g3) => `$${g1} ${op} ${g3}$`
+    );
+    if (next === processed) break;
+    processed = next;
+  }
+
+  // 7. Restore code blocks
   return processed.replace(/__CODE_BLOCK_(\d+)__/g, (_, idx) => codeBlocks[Number(idx)]);
 };
 
