@@ -1,0 +1,118 @@
+# ==============================================================================
+# QuarkDock Git Ignore Configuration
+# ==============================================================================
+
+# OS Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Python runtime & caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Python virtual environments & package managers
+.venv/
+venv/
+ENV/
+env/
+.uv/
+.poetry/
+poetry.lock
+
+# Python testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Python linting & type checking
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Node & Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+services/ui/dist/
+services/ui/.next/
+services/ui/build/
+.turbo/
+
+# Environment & Secrets (NEVER COMMIT SENSITIVE DATA)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+
+# Persistent Container Volumes & Local Runtime Data
+data/
+ollama_data/
+pg_data/
+redis_data/
+langfuse_data/
+models/
+
+# Application Logs
+*.log
+logs/
+*.pid
+
+# Evaluation output & scratch artifacts
+eval/results/
+eval/output/
+scratch/
+tmp/
+.temp/
