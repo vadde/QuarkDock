@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ThumbsUp, ThumbsDown, Copy, Check, ExternalLink, Bot, User } from 'lucide-react';
 import { Message } from '../types/chat';
 
@@ -9,56 +11,12 @@ interface MessageItemProps {
 
 export const MessageItem: React.FC<MessageItemProps> = ({ message, onFeedback }) => {
   const isUser = message.role === 'user';
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const handleCopy = (code: string, index: number) => {
+  const handleCopy = (code: string, key: string) => {
     navigator.clipboard.writeText(code);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
-
-  // Simple Markdown Code Block Parser
-  const renderContent = (content: string) => {
-    const parts = content.split(/(```[\s\S]*?```)/g);
-
-    return parts.map((part, index) => {
-      if (part.startsWith('```') && part.endsWith('```')) {
-        const lines = part.slice(3, -3).trim().split('\n');
-        const lang = lines[0].trim() || 'code';
-        const code = lines.slice(1).join('\n') || lines[0];
-
-        return (
-          <div key={index} className="code-block">
-            <div className="code-header">
-              <span>{lang}</span>
-              <button className="copy-btn" onClick={() => handleCopy(code, index)}>
-                {copiedIndex === index ? (
-                  <>
-                    <Check size={13} color="#34d399" />
-                    <span style={{ color: '#34d399' }}>Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={13} />
-                    <span>Copy</span>
-                  </>
-                )}
-              </button>
-            </div>
-            <pre className="code-content">
-              <code>{code}</code>
-            </pre>
-          </div>
-        );
-      }
-
-      // Render regular paragraphs preserving newlines
-      return (
-        <span key={index} style={{ whiteSpace: 'pre-wrap' }}>
-          {part}
-        </span>
-      );
-    });
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   return (
@@ -69,7 +27,58 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onFeedback })
       </div>
 
       <div className={`glass-panel ${isUser ? 'bubble-user' : `bubble-assistant ${message.isStreaming ? 'streaming' : ''}`}`}>
-        {renderContent(message.content)}
+        <div className="markdown-body">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              pre({ children }) {
+                // Return Fragment to avoid nested pre tags when code block renders
+                return <>{children}</>;
+              },
+              code({ node, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || '');
+                const codeString = String(children).replace(/\n$/, '');
+                const isMultiLine = codeString.includes('\n');
+                const blockKey = `${message.id}-${codeString.slice(0, 12)}`;
+
+                if (match || isMultiLine) {
+                  const lang = match ? match[1] : 'code';
+                  return (
+                    <div className="code-block">
+                      <div className="code-header">
+                        <span>{lang}</span>
+                        <button className="copy-btn" onClick={() => handleCopy(codeString, blockKey)}>
+                          {copiedKey === blockKey ? (
+                            <>
+                              <Check size={13} color="#34d399" />
+                              <span style={{ color: '#34d399' }}>Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={13} />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <pre className="code-content">
+                        <code>{codeString}</code>
+                      </pre>
+                    </div>
+                  );
+                }
+
+                return (
+                  <code className="inline-code" {...props}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
         {message.isStreaming && <span className="streaming-cursor" />}
       </div>
 
@@ -94,7 +103,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onFeedback })
               {message.tokens} tokens
               {message.durationMs ? ` in ${(message.durationMs / 1000).toFixed(2)}s` : ''}
               {message.tokens && message.durationMs
-                ? ` (${Math.round((message.tokens / (message.durationMs / 1000)))} t/s)`
+                ? ` (${Math.round(message.tokens / (message.durationMs / 1000))} t/s)`
                 : ''}
             </span>
           )}

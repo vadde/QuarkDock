@@ -12,7 +12,9 @@
   "dependencies": {
     "lucide-react": "^0.446.0",
     "react": "^19.0.0-rc-69d4b80a-20241021",
-    "react-dom": "^19.0.0-rc-69d4b80a-20241021"
+    "react-dom": "^19.0.0-rc-69d4b80a-20241021",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.11",

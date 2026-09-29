@@ -323,6 +323,117 @@ body::after {
   50% { opacity: 0; }
 }
 
+/* Markdown Rendering & Typography */
+.markdown-body {
+  font-size: 0.95rem;
+  line-height: 1.68;
+  word-break: break-word;
+}
+
+.markdown-body p {
+  margin: 0 0 12px 0;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.markdown-body em {
+  color: #e2e8f0;
+  font-style: italic;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 8px 0 12px 20px;
+  padding: 0;
+}
+
+.markdown-body li {
+  margin-bottom: 4px;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  color: #ffffff;
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.markdown-body h1 { font-size: 1.35rem; }
+.markdown-body h2 { font-size: 1.2rem; }
+.markdown-body h3 { font-size: 1.05rem; }
+
+.markdown-body blockquote {
+  border-left: 3px solid var(--plasma-violet);
+  margin: 12px 0;
+  padding: 8px 16px;
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: 0 8px 8px 0;
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.markdown-body hr {
+  border: none;
+  height: 1px;
+  background: var(--glass-border);
+  margin: 16px 0;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 0.85rem;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--glass-border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-body th {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.markdown-body a {
+  color: var(--plasma-cyan);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition-fast);
+}
+
+.markdown-body a:hover {
+  color: #a5f3fc;
+}
+
+.inline-code {
+  background: rgba(139, 92, 246, 0.16);
+  border: 1px solid rgba(139, 92, 246, 0.32);
+  color: #c4b5fd;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  font-weight: 500;
+}
+
 /* Code Blocks in Messages */
 .code-block {
   margin: 12px 0;
