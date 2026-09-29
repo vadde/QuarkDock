@@ -90,10 +90,10 @@ services:
       - quarkdock-net
 
   # ----------------------------------------------------------------------------
-  # 4. Observability & Tracing Platform (Langfuse v3)
+  # 4. Observability & Tracing Platform (Langfuse v2 - Postgres Native)
   # ----------------------------------------------------------------------------
   langfuse:
-    image: langfuse/langfuse:3
+    image: langfuse/langfuse:2
     container_name: quarkdock-langfuse
     depends_on:
       postgres:
@@ -119,28 +119,6 @@ services:
     networks:
       - quarkdock-net
 
-  # ----------------------------------------------------------------------------
-  # 5. OpenTelemetry Collector
-  # ----------------------------------------------------------------------------
-  otel:
-    image: otel/opentelemetry-collector-contrib:0.95.0
-    container_name: quarkdock-otel
-    command: ["--config=/etc/otelcol-contrib/config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "13133:13133"
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-        reservations:
-          memory: 64M
-    networks:
-      - quarkdock-net
 
   # ----------------------------------------------------------------------------
   # 6. High-Efficiency FastAPI Backend Engine
