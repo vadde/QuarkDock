@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import orjson
+
 from src.core.events import format_sse_event
 
 

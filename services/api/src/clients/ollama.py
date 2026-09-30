@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from typing import Any
+
 import httpx
 import orjson
 
@@ -18,7 +19,7 @@ class OllamaClient:
     - Uses orjson for rapid JSON serialization.
     """
 
-    __slots__ = ("_client", "_base_url", "_default_model")
+    __slots__ = ("_base_url", "_client", "_default_model")
 
     def __init__(self, settings: Settings) -> None:
         self._base_url = settings.ollama_base_url.rstrip("/")

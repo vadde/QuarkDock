@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import time
-from collections.abc import AsyncIterator
 import uuid
+from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -24,7 +24,6 @@ async def chat_completion(request: Request, payload: ChatRequest) -> StreamingRe
     """
     ollama_client = request.app.state.ollama
     langfuse_client = getattr(request.app.state, "langfuse", None)
-    settings = request.app.state.settings
 
     trace_id = str(uuid.uuid4())
     start_time = time.perf_counter()
@@ -33,8 +32,7 @@ async def chat_completion(request: Request, payload: ChatRequest) -> StreamingRe
     messages_payload: list[dict[str, str]] = []
     if payload.system_prompt:
         messages_payload.append({"role": "system", "content": payload.system_prompt})
-    for m in payload.messages:
-        messages_payload.append({"role": m.role, "content": m.content})
+    messages_payload.extend({"role": m.role, "content": m.content} for m in payload.messages)
 
     # Prepare Langfuse trace
     trace = None

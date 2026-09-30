@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+
 import redis.asyncio as aioredis
 
 from src.config import Settings

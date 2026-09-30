@@ -64,7 +64,7 @@ async def list_models(request: Request) -> dict[str, Any]:
 @router.post("/chat/completions", summary="OpenAI-Compatible Chat Completions with Langfuse Tracing")
 async def chat_completions(request: Request, payload: OpenAIChatRequest):
     """OpenAI-compatible chat completion gateway.
-    
+
     Intercepts OpenClaw Desktop / host client requests and automatically generates
     deep Langfuse spans with token usage, duration, and latency.
     """

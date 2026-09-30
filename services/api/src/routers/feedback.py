@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
+
 from fastapi import APIRouter, HTTPException, Request
+
 from src.models.chat import FeedbackRequest
 
 router = APIRouter(prefix="/api/v1/feedback", tags=["Observability & Feedback"])

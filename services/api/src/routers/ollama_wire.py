@@ -66,7 +66,7 @@ async def show_model(request: Request) -> Response:
 @router.post("/chat", summary="Ollama Native Chat with Langfuse Telemetry")
 async def chat(request: Request):
     """Intercept Ollama wire-format chat completions.
-    
+
     Streams responses directly from host Ollama with zero buffering and logs
     deep telemetry traces (tokens, latency, prompt, output) into Langfuse under
     the QuarkDock project.
