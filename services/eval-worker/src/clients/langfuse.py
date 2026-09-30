@@ -42,8 +42,6 @@ class LangfuseApiClient:
         params = {
             "page": page,
             "limit": limit,
-            "orderBy": "timestamp",
-            "order": "desc",
         }
         try:
             resp = await self._client.get(url, params=params)
