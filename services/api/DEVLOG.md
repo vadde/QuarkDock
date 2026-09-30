@@ -24,3 +24,12 @@
   - `src/routers/models.py`: `/api/v1/models` catalog endpoint.
   - `src/routers/feedback.py`: `/api/v1/feedback` rating endpoint.
   - `Dockerfile`: Multi-stage build (`python:3.12-slim`) with `uvloop` high-throughput event loop.
+
+## [2026-09-30] - Ollama Native Wire Format Proxy & OpenClaw Langfuse Telemetry
+- **Author**: QuarkDock Core Architecture
+- **Scope**: Native Ollama wire format routing (`POST /api/chat`, `GET /api/tags`, `GET /api/version`, `POST /api/show`) with automatic Langfuse telemetry injection.
+- **Components Added**:
+  - `src/routers/ollama_wire.py`: High-efficiency NDJSON streaming and non-streaming proxy to host Ollama, generating Langfuse traces (`openclaw_ollama_chat`) and generations (`ollama_chat`) under project `QuarkDock` with prompt/completion token usage and latency.
+  - `src/clients/ollama.py`: Expose persistent connection client via property for zero-allocation connection reuse.
+  - Verified OpenClaw trace streaming and Langfuse database ingestion.
+

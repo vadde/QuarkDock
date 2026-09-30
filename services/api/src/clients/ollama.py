@@ -40,6 +40,11 @@ class OllamaClient:
             http2=True,
         )
 
+    @property
+    def client(self) -> httpx.AsyncClient:
+        """Expose shared persistent httpx.AsyncClient."""
+        return self._client
+
     async def close(self) -> None:
         """Close connection pool cleanly."""
         await self._client.aclose()
