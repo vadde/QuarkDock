@@ -55,6 +55,7 @@ timeline
 ### Phase 5: LLM-as-Judge & Evaluation Harness (v0.3.0-rc)
 - Automated evaluation runner executing local model-graded evals (groundedness, correctness).
 - Score publishing directly into Langfuse trace dataset.
+- Autonomous background evaluation worker (`eval-worker` / SPEC-005) continuously polling Langfuse traces and scoring via local Ollama without client interference.
 
 ### Phase 6: Ecosystem Polish & Extension (v1.0.0)
 - End-to-end integration tests and memory leak stress benchmarks.
