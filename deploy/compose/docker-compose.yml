@@ -157,6 +157,39 @@ services:
     networks:
       - quarkdock-net
 
+  # ----------------------------------------------------------------------------
+  # 8. Autonomous Decoupled LLM-as-Judge Evaluation Worker
+  # ----------------------------------------------------------------------------
+  eval-worker:
+    build:
+      context: ../../services/eval-worker
+      dockerfile: Dockerfile
+    container_name: quarkdock-eval-worker
+    depends_on:
+      - langfuse
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - LANGFUSE_HOST=http://langfuse:3000
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-quarkdock-local}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-sk-lf-quarkdock-local}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - JUDGE_MODEL=${JUDGE_MODEL:-qwen2.5:7b}
+      - POLL_INTERVAL_SEC=${EVAL_WORKER_POLL_INTERVAL_SEC:-15.0}
+      - BATCH_SIZE=${EVAL_WORKER_BATCH_SIZE:-10}
+      - DB_PATH=/data/eval_state.db
+    volumes:
+      - eval_data:/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    networks:
+      - quarkdock-net
+
 # ------------------------------------------------------------------------------
 # Persistent Storage Volumes
 # ------------------------------------------------------------------------------
@@ -165,6 +198,8 @@ volumes:
     name: quarkdock_pg_data
   redis_data:
     name: quarkdock_redis_data
+  eval_data:
+    name: quarkdock_eval_data
 
 # ------------------------------------------------------------------------------
 # Bridge Network

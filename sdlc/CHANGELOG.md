@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0-beta] - 2026-09-30
+
+### Added
+- **Decoupled LLM-as-a-Judge Evaluation Worker (`services/eval-worker`)**: Autonomous background worker polling Langfuse Public REST API (`/api/public/traces`) for chat interactions, evaluating quality with local Metal GPU Ollama judge models (`qwen2.5:7b`) on correctness, conciseness, and helpfulness rubrics, and publishing scores to `/api/public/scores`.
+- **Durable Watermark Persistence**: Local SQLite database (`eval_state.db` in Docker volume `eval_data`) guaranteeing monotonic exactly-once processing across restarts.
+- **Specification SPEC-005**: Full SDD specification in `specs/catalog/SPEC-005-eval-worker.md` with resource budget (256MB cap) and interface contracts.
+- **Client Eval Toggle (`ENABLE_CLIENT_EVAL`)**: Feature toggle defaulting to `false` across API and eval harnesses, cleanly separating chat generation from evaluation pipelines.
+
+---
+
 ## [0.1.0-alpha] - 2026-09-29
 
 ### Added

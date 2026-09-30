@@ -24,7 +24,7 @@
   - **Draggable Quantum Navigation HUD**: Floating frosted glass capsule with Apex (`↑ Top`) and Nadir (`Latest ↓`) teleports, live generation plasma pulse radar, depth percentage (`🧭 42%`), and freeform drag-and-drop with persistent coordinates.
 - 🔬 **Deep Observability Stack**: Self-hosted **Langfuse v2** on port `3001` (Postgres 16 + Redis 7) tracking every token chunk, latency distribution, user rating, and cost metric.
 - 📦 **1-Click Model Orchestrator ("Manage")**: Real-time SSE streaming model installer and switcher (Qwen 2.5, Llama 3.2, Gemma 3, DeepSeek) storing weights natively on host SSD.
-- ⚖️ **LLM-as-Judge Evaluation Harness**: Automated benchmarking suite (`make eval-judge`) scoring groundedness and reasoning quality.
+- ⚖️ **LLM-as-Judge Evaluation Harness & Autonomous Worker**: Continuous, decoupled evaluation worker (`eval-worker`) scoring correctness, conciseness, and helpfulness against local Metal GPU models and writing scores directly to Langfuse.
 
 ---
 
@@ -50,10 +50,13 @@ flowchart TB
             Redis["quarkdock-redis (:6379)\n(Session & Rate Cache)"]
         end
 
-        subgraph ObservabilityLayer["Observability Stack (:3000 -> Host :3001)"]
+        subgraph ObservabilityLayer["Observability & Evaluation Layer (:3000 -> Host :3001)"]
             Langfuse["quarkdock-langfuse\n(Tracing Web Dashboard)"]
             Postgres[("quarkdock-postgres\n(:5432 Trace Store)")]
+            EvalWorker["quarkdock-eval-worker\n(Decoupled LLM Judge Daemon)"]
+            StateDB[("quarkdock_eval_data\n(SQLite Watermark DB)")]
             Langfuse --- Postgres
+            EvalWorker --- StateDB
         end
     end
 
@@ -64,6 +67,9 @@ flowchart TB
     API -->|HTTP Streaming :11434| Ollama
     API -->|Async Trace Flushing :3000| Langfuse
     API -->|Cache / Sessions :6379| Redis
+    EvalWorker -->|Poll /api/public/traces :3000| Langfuse
+    EvalWorker -->|Score Inference :11434| Ollama
+    EvalWorker -->|Ingest Scores /api/public/scores :3000| Langfuse
     Browser -->|Inspect Traces :3001| Langfuse
 ```
 
@@ -79,6 +85,7 @@ flowchart TB
 | **Langfuse UI** | `quarkdock-langfuse` | `3000` | `3001` | Tracing & Observability Dashboard | `admin@quarkdock.local` / `quarkdock1234` |
 | **PostgreSQL** | `quarkdock-postgres` | `5432` | `5432` | Langfuse Trace Database | `postgres` / `postgres` |
 | **Redis** | `quarkdock-redis` | `6379` | `6379` | Fast Session Cache & Rate Limiting | None (Local) |
+| **Eval Worker** | `quarkdock-eval-worker` | — | *(internal)* | Decoupled LLM-as-a-Judge Evaluation Daemon | None (Local) |
 
 ---
 

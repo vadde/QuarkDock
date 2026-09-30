@@ -26,7 +26,7 @@ Last Updated: 2026-09-29
 | O-14 | Clean Git Commit History & Push | Phase 0 | `VERIFIED` | Git remote |
 | O-15 | High-Efficiency Python Backend (Rule 09) | Phase 2 | `VERIFIED` | `SPEC-002` |
 | O-16 | Extensible Modular Ecosystem | Phase 6 | `VERIFIED` | `docs/` |
-| O-17 | Autonomous Decoupled LLM-as-Judge Worker | Phase 5 | `DRAFT` | `SPEC-005` |
+| O-17 | Autonomous Decoupled LLM-as-Judge Worker | Phase 5 | `VERIFIED` | `SPEC-005` |
 
 ---
 
@@ -40,7 +40,7 @@ Last Updated: 2026-09-29
 | `langfuse` | SPEC-004 | `3001:3000` | 1.0 GB | `VERIFIED` | `curl -f http://localhost:3001/` |
 | `postgres` | SPEC-004 | `5432:5432` | 512 MB | `VERIFIED` | `pg_isready -U postgres` |
 | `redis` | SPEC-002 | `6379:6379` | 256 MB | `VERIFIED` | `redis-cli ping` |
-| `eval-worker` | SPEC-005 | `internal` | 256 MB | `DRAFT` | `docker inspect / logs` |
+| `eval-worker` | SPEC-005 | `internal` | 256 MB | `VERIFIED` | `docker inspect / logs` |
 
 ---
 

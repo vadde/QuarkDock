@@ -122,14 +122,22 @@ pull-model: ## Pull default LLM weights (qwen2.5:7b) into Ollama
 	@echo -e "$(GREEN)✓ Model pull initiated/completed.$(RESET)"
 
 ##@ 🔬 Quality, Testing & Evals
-test: test-api test-ui ## Run all test suites across services
+test: test-api test-eval test-ui ## Run all test suites across services
 
 test-api: ## Run backend unit & integration tests
 	@echo -e "$(CYAN)🧪 Running API tests...$(RESET)"
 	@if [ -d services/api/tests ]; then \
-		pytest services/api/tests -v; \
+		PYTHONPATH=services/api uv run --with pytest --with pytest-asyncio --with fastapi --with httpx --with orjson --with pydantic --with pydantic-settings --with langfuse --with redis python -m pytest services/api/tests/ -v 2>/dev/null || pytest services/api/tests -v; \
 	else \
 		echo -e "$(YELLOW)services/api/tests directory not yet populated$(RESET)"; \
+	fi
+
+test-eval: ## Run eval-worker unit tests
+	@echo -e "$(CYAN)🧪 Running Eval Worker tests...$(RESET)"
+	@if [ -d services/eval-worker/tests ]; then \
+		PYTHONPATH=services/eval-worker uv run --with pytest --with pytest-asyncio --with httpx --with orjson --with pydantic --with pydantic-settings python -m pytest services/eval-worker/tests/ -v 2>/dev/null || pytest services/eval-worker/tests/ -v; \
+	else \
+		echo -e "$(YELLOW)services/eval-worker/tests directory not yet populated$(RESET)"; \
 	fi
 
 test-ui: ## Run frontend test suite
@@ -143,7 +151,9 @@ test-ui: ## Run frontend test suite
 lint: ## Run linters (Ruff on Python, ESLint on TypeScript)
 	@echo -e "$(CYAN)🧹 Linting Python code with Ruff...$(RESET)"
 	@if command -v ruff > /dev/null 2>&1; then \
-		ruff check services/api/; \
+		ruff check services/api/ services/eval-worker/; \
+	elif command -v uv > /dev/null 2>&1; then \
+		uv run --with ruff ruff check services/api/ services/eval-worker/; \
 	else \
 		echo -e "$(YELLOW)ruff not installed on host, skipping host check$(RESET)"; \
 	fi
@@ -151,7 +161,9 @@ lint: ## Run linters (Ruff on Python, ESLint on TypeScript)
 format: ## Auto-format Python code (Ruff) and UI code (Prettier)
 	@echo -e "$(CYAN)✨ Formatting Python code with Ruff...$(RESET)"
 	@if command -v ruff > /dev/null 2>&1; then \
-		ruff format services/api/; \
+		ruff format services/api/ services/eval-worker/; \
+	elif command -v uv > /dev/null 2>&1; then \
+		uv run --with ruff ruff format services/api/ services/eval-worker/; \
 	fi
 
 eval-judge: ## Run LLM-as-judge automated quality evaluation harness
