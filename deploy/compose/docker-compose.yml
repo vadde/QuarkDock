@@ -75,6 +75,8 @@ services:
         condition: service_healthy
     ports:
       - "${LANGFUSE_PORT:-3001}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:quarkdock_postgres_secret@postgres:5432/langfuse}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
@@ -115,6 +117,7 @@ services:
       - LANGFUSE_HOST=http://langfuse:3000
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-quarkdock-local}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-sk-lf-quarkdock-local}
+      - ENABLE_CLIENT_EVAL=${ENABLE_CLIENT_EVAL:-false}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]

@@ -14,6 +14,14 @@ async def record_feedback(feedback: FeedbackRequest, request: Request) -> dict[s
     if not langfuse_client:
         raise HTTPException(status_code=503, detail="Observability service unavailable")
 
+    settings = getattr(request.app.state, "settings", None)
+    if settings and not settings.enable_client_eval and feedback.name in ("correctness", "conciseness", "helpfulness"):
+        return {
+            "status": "client_eval_disabled",
+            "message": "Client-side evaluation scoring is disabled (ENABLE_CLIENT_EVAL=false). Use Langfuse server-side evaluators.",
+            "trace_id": feedback.trace_id,
+        }
+
     success = langfuse_client.create_score(
         trace_id=feedback.trace_id,
         name=feedback.name,

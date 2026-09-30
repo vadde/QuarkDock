@@ -131,6 +131,23 @@ def submit_feedback(trace_id: str, rubric_name: str, score: float, reasoning: st
 
 
 def main():
+    import os
+    import sys
+
+    is_enabled = os.environ.get("ENABLE_CLIENT_EVAL", "false").lower() in ("true", "1")
+    force_run = "--force" in sys.argv
+
+    if not is_enabled and not force_run:
+        print("\n" + "=" * 70)
+        print("⚖️  QuarkDock Client-Side Evaluation Status: DISABLED")
+        print("=" * 70)
+        print("Client-side LLM-as-a-judge evaluation is turned off by default (ENABLE_CLIENT_EVAL=false).")
+        print("Evaluations and adjudications are delegated to the Langfuse portal server-side.")
+        print("\nTo force client-side evaluation locally:")
+        print("  ENABLE_CLIENT_EVAL=true python3 eval/run_eval.py")
+        print("  or: python3 eval/run_eval.py --force\n")
+        return
+
     print("\n" + "=" * 70)
     print("⚖️  QuarkDock LLM-as-a-Judge Benchmark Suite")
     print(f"Target Model: {MODEL} | Endpoint: {API_BASE}")

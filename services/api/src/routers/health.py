@@ -22,10 +22,16 @@ async def health_check(request: Request) -> dict[str, Any]:
 
     is_ready = ollama_status.get("status") == "ok"
 
+    settings = getattr(request.app.state, "settings", None)
+    client_eval_enabled = settings.enable_client_eval if settings else False
+
     return {
         "status": "ok" if is_ready else "degraded",
         "uptime_seconds": int(time.time() - _START_TIME),
         "version": getattr(request.app.state, "version", "0.1.0"),
+        "features": {
+            "client_eval_enabled": client_eval_enabled,
+        },
         "components": {
             "ollama": ollama_status,
             "redis": redis_status,

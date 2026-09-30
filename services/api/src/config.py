@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = Field(default="sk-lf-quarkdock-local")
     langfuse_enabled: bool = True
 
+    # Feature Toggles
+    enable_client_eval: bool = Field(
+        default=False,
+        validation_alias="ENABLE_CLIENT_EVAL",
+        description="Feature toggle for client-side LLM-as-a-judge evaluation",
+    )
+
     # Security & CORS
     cors_origins: list[str] = [
         "http://localhost:3000",
