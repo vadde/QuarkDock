@@ -1,0 +1,59 @@
+name: QuarkDock Ecosystem Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose-validation:
+    name: Docker Compose Topology Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose -f deploy/compose/docker-compose.yml config > /dev/null
+          echo "✅ deploy/compose/docker-compose.yml topology is valid."
+
+  api-syntax-and-lint:
+    name: FastAPI Gateway Syntax & Lint Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies & linter
+        run: |
+          pip install ruff
+          python -m compileall -q services/
+          echo "✅ All backend services compiled successfully."
+
+      - name: Run Ruff on Backend
+        run: |
+          ruff check services/api --select=E9,F63,F7,F82 --output-format=github
+
+  security-scan:
+    name: Gitleaks Secret Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
